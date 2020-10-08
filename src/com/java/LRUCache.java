@@ -2,86 +2,107 @@ package com.java;
 
 import java.util.HashMap;
 
-class DDNode {
-	int value;
-	int key;
-	DDNode left;
-	DDNode right;
-}
 public class LRUCache {
-	
-	HashMap<Integer, DDNode> hashmap;
-	static DDNode start;
-	static DDNode end;
-	int LRU_SIZE = 4; // Here i am setting 4 to test the LRU cache
-						// implementation, it can make be dynamic
-	public LRUCache() {
-		hashmap = new HashMap<Integer, DDNode>();
-	}
-	
-	public int getEntry(int key) {
-		if (hashmap.containsKey(key)) // Key Already Exist, just update the
-		{
-			DDNode node = hashmap.get(key);
-			removeNode(node);
-			addAtTop(node);
-			return node.value;
-		}
-		return -1;
-	}
-	public void putEntry(int key, int value) {
-		if (hashmap.containsKey(key)) // Key Already Exist, just update the value and move it to top
-		{
-			DDNode node = hashmap.get(key);
-			node.value = value;
-			removeNode(node);
-			addAtTop(node);
-		} else {
-			DDNode newnode = new DDNode();
-			newnode.left = null;
-			newnode.right = null;
-			newnode.value = value;
-			newnode.key = key;
-			if (hashmap.size() > LRU_SIZE) // We have reached maxium size so need to make room for new element.
-			{
-				hashmap.remove(end.key);
-				removeNode(end);				
-				addAtTop(newnode);
 
-			} else {
-				addAtTop(newnode);
+	private HashMap<Integer, DLinkedNode> cache = new HashMap<Integer, DLinkedNode>();
+	private int count;
+	private int capacity;
+	private DLinkedNode head, tail;
+
+	public LRUCache(int capacity) {
+		this.count = 0;
+		this.capacity = capacity;
+
+		head = new DLinkedNode();
+		head.pre = null;
+
+		tail = new DLinkedNode();
+		tail.next = null;
+
+		head.next = tail;
+		tail.pre = head;
+	}
+
+	/**
+	 * Always add the new node right after head;
+	 */
+	private void addNode(DLinkedNode node) {
+
+		node.pre = head;
+		node.next = head.next;
+
+		head.next.pre = node;
+		head.next = node;
+	}
+
+	/**
+	 * Remove an existing node from the linked list.
+	 */
+	private void removeNode(DLinkedNode node) {
+		node.pre.next = node.next;
+		node.next.pre = node.pre;
+	}
+
+	/**
+	 * Move certain node in between to the head.
+	 */
+	private void moveToHead(DLinkedNode node) {
+		removeNode(node);
+		addNode(node);
+	}
+
+// pop the current tail. 
+	private DLinkedNode popTail() {
+		DLinkedNode res = tail.pre;
+		removeNode(res);
+		return res;
+	}
+
+	public int get(int key) {
+
+		DLinkedNode node = cache.get(key);
+		if (node == null) {
+			return -1; // should raise exception here.
+		}
+
+		// move the accessed node to the head;
+		moveToHead(node);
+
+		return node.value;
+	}
+
+	public void put(int key, int value) {
+		DLinkedNode node = cache.get(key);
+
+		if (node == null) {
+
+			DLinkedNode newNode = new DLinkedNode();
+			newNode.key = key;
+			newNode.value = value;
+
+			cache.put(key, newNode);
+			addNode(newNode);
+
+			++count;
+
+			if (count > capacity) {
+				// pop the tail
+				DLinkedNode tail = popTail();
+				cache.remove(tail.key);
+				--count;
 			}
-
-			hashmap.put(key, newnode);
+		} else {
+			// update the value.
+			node.value = value;
+			moveToHead(node);
 		}
 	}
-	
-	
-	
-	public static void addAtTop(DDNode node) {
-		node.right = start;
-		node.left = null;
-		if (start != null)
-			start.left = node;
-		start = node;
-		if (end == null)
-			end = start;
-	}
-	
-	
-	public void removeNode(DDNode node) {
 
-		if (node.left != null) {
-			node.left.right = node.right;
-		} else {
-			start = node.right;
-		}
-
-		if (node.right != null) {
-			node.right.left = node.left;
-		} else {
-			end = node.left;
-		}
+	class DLinkedNode {
+		int key;
+		int value;
+		DLinkedNode pre;
+		DLinkedNode next;
 	}
 
 }
